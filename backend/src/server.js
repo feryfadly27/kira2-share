@@ -10,7 +10,7 @@ import experienceRoutes from './routes/experience.js';
 import photoRoutes from './routes/photo.js';
 import shareRoutes from './routes/share.js';
 import subscriptionRoutes from './routes/subscription.js';
-import { startBoothWatcher, importNewPhotos } from './booth.js';
+import { startBoothWatcher, importNewPhotos, currentEventId, currentEventName, resolveEventId } from './booth.js';
 import { startScreenWatcher } from './boothScreen.js';
 import { startShareRewriter } from './boothShare.js';
 import { renderGallery, renderQrPage } from './views.js';
@@ -51,9 +51,14 @@ app.post('/api/booth/import', (req, res) => {
 //  ke server kita, lalu diarahkan ke galeri semua foto (ori + gif + print).
 // ============================================================
 
+// Event replika yang mewakili event dslrBooth yang sedang aktif.
 function boothEventId() {
-  const ev = db.prepare("SELECT id FROM events WHERE name = ?").get('dslrBooth Import');
-  return ev ? ev.id : null;
+  return currentEventId();
+}
+
+// URL dasar galeri untuk sebuah event replika.
+function galleryBaseUrl(eventId) {
+  return `http://${getLanIp()}:${process.env.PORT || 4000}/gallery/${eventId}`;
 }
 
 // Ambil IPv4 LAN utama (untuk QR yang harus bisa dibuka HP di jaringan yang sama).
@@ -233,16 +238,11 @@ app.listen(PORT, () => {
   startScreenWatcher(async () => {
     const id = boothEventId();
     if (!id) return null;
-    return `http://${getLanIp()}:${process.env.PORT || 4000}/gallery/${id}`;
+    return galleryBaseUrl(id);
   });
-  // Tulis ulang link share dslrBooth (FileItems.UploadUrl) -> galeri self-host.
-  startShareRewriter(() => {
-    const id = boothEventId();
-    if (!id) return null;
-    const base = `http://${getLanIp()}:${process.env.PORT || 4000}/gallery/${id}`;
-    const fn = () => base;
-    fn.base = base;
-    fn.eventId = id;
-    return fn;
-  }, 800);
+  // Tulis ulang link share dslrBooth (FileItems.UploadUrl) -> galeri event asalnya.
+  startShareRewriter(() => ({
+    resolveEventId: (name) => resolveEventId(name) || currentEventId(),
+    baseUrl: (eventId) => galleryBaseUrl(eventId),
+  }), 800);
 });

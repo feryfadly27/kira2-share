@@ -1,6 +1,13 @@
 import { Router } from 'express';
+import { unlinkSync } from 'node:fs';
+import { join, basename } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { dirname } from 'node:path';
 import { db } from '../db.js';
 import { requireAuth } from '../auth.js';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const UPLOAD_DIR = join(__dirname, '..', '..', 'uploads');
 
 const r = Router();
 r.use(requireAuth);
@@ -43,10 +50,21 @@ r.put('/:id', (req, res) => {
   res.json(db.prepare('SELECT * FROM events WHERE id = ?').get(ev.id));
 });
 
-// DELETE /api/event/:id
+// DELETE /api/event/:id  (hapus foto, share, dan experiences terkait)
 r.delete('/:id', (req, res) => {
-  db.prepare('DELETE FROM events WHERE id = ? AND user_id = ?').run(req.params.id, req.user.sub);
-  res.json({ deleted: true });
+  const ev = db.prepare('SELECT id FROM events WHERE id = ? AND user_id = ?').get(req.params.id, req.user.sub);
+  if (!ev) return res.status(404).json({ error: 'not found' });
+
+  // Hapus file foto dari disk
+  const files = db.prepare('SELECT url FROM photos WHERE event_id = ?').all(ev.id);
+  for (const f of files) {
+    try { unlinkSync(join(UPLOAD_DIR, basename(f.url))); } catch { /* file mungkin tidak ada */ }
+  }
+  db.prepare('DELETE FROM photos WHERE event_id = ?').run(ev.id);
+  try { db.prepare('DELETE FROM shares WHERE event_id = ?').run(ev.id); } catch { /* tabel tidak ada */ }
+  try { db.prepare('DELETE FROM experiences WHERE event_id = ?').run(ev.id); } catch { /* tabel tidak ada */ }
+  db.prepare('DELETE FROM events WHERE id = ?').run(ev.id);
+  res.json({ deleted: true, photos: files.length });
 });
 
 // GET /api/event/:id/analytics
