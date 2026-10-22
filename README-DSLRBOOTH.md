@@ -56,7 +56,7 @@ self-host**: foto masuk ke server kita, dan **QR share bawaan dslrBooth** (tombo
 
 ### 1. Backend (wajib)
 ```powershell
-cd "C:\Users\Fery\Documents\Default Project\lumabooth-replica\backend"
+cd "C:\Users\Fery\Documents\Default Project\kira2-share\backend"
 npm run dev
 ```
 Output normal:
@@ -69,7 +69,7 @@ Output normal:
 
 ### 2. Frontend (opsional — untuk dasbor admin)
 ```powershell
-cd "C:\Users\Fery\Documents\Default Project\lumabooth-replica\frontend"
+cd "C:\Users\Fery\Documents\Default Project\kira2-share\frontend"
 npm run dev
 ```
 

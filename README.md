@@ -30,7 +30,7 @@ Buka **2 terminal**.
 
 ### Terminal 1 — Backend (port 4000)
 ```powershell
-cd "C:\Users\Fery\Documents\Default Project\lumabooth-replica\backend"
+cd "C:\Users\Fery\Documents\Default Project\kira2-share\backend"
 npm install        # sekali saja
 npm run seed       # buat user demo + event contoh (sekali saja)
 npm run dev        # atau: npm start
@@ -38,7 +38,7 @@ npm run dev        # atau: npm start
 
 ### Terminal 2 — Frontend (port 5173)
 ```powershell
-cd "C:\Users\Fery\Documents\Default Project\lumabooth-replica\frontend"
+cd "C:\Users\Fery\Documents\Default Project\kira2-share\frontend"
 npm install        # sekali saja
 npm run dev
 ```
@@ -60,7 +60,7 @@ Lalu buka **http://localhost:5173** di browser.
 
 ## Struktur
 ```
-lumabooth-replica/
+kira2-share/
 ├── backend/
 │   ├── src/server.js        # entry Express
 │   ├── src/db.js            # skema SQLite (users, events)

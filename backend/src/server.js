@@ -27,7 +27,7 @@ app.use(express.json());
 // Folder upload foto (pengganti Backblaze B2 + CDN).
 app.use('/uploads', express.static(join(__dirname, '..', 'uploads')));
 
-app.get('/api/health', (req, res) => res.json({ ok: true, service: 'lumabooth-replica' }));
+app.get('/api/health', (req, res) => res.json({ ok: true, service: 'kira2-share' }));
 app.use('/api/user', userRoutes);
 app.use('/api/event', eventRoutes);
 app.use('/api/event', experienceRoutes); // /api/event/:id/experiences
