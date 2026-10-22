@@ -1,0 +1,38 @@
+# ---- dependensi ----
+node_modules/
+
+# ---- hasil build ----
+dist/
+build/
+.vite/
+
+# ---- environment & secret ----
+.env
+.env.*
+!.env.example
+
+# ---- database lokal replika (isi pengguna) ----
+backend/data/
+*.db
+*.db-shm
+*.db-wal
+
+# ---- foto hasil upload booth (data pribadi, jangan di-commit) ----
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# ---- CA bridge (berisi kunci privat!) ----
+bridge/ca/
+
+# ---- log ----
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# ---- OS & editor ----
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
