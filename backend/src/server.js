@@ -13,6 +13,7 @@ import subscriptionRoutes from './routes/subscription.js';
 import { startBoothWatcher, importNewPhotos, currentEventId, currentEventName, resolveEventId } from './booth.js';
 import { startScreenWatcher } from './boothScreen.js';
 import { startShareRewriter } from './boothShare.js';
+import { startVpsSync, publicEventId, vpsStatus } from './vpsSync.js';
 import { renderGallery, renderQrPage } from './views.js';
 import { db } from './db.js';
 import QRCode from 'qrcode';
@@ -28,6 +29,9 @@ app.use(express.json());
 app.use('/uploads', express.static(join(__dirname, '..', 'uploads')));
 
 app.get('/api/health', (req, res) => res.json({ ok: true, service: 'kira2-share' }));
+
+// Status sinkronisasi ke VPS (diagnostic).
+app.get('/api/booth/vps-status', (req, res) => res.json(vpsStatus()));
 app.use('/api/user', userRoutes);
 app.use('/api/event', eventRoutes);
 app.use('/api/event', experienceRoutes); // /api/event/:id/experiences
@@ -57,8 +61,14 @@ function boothEventId() {
 }
 
 // URL dasar galeri untuk sebuah event replika.
+// Prioritaskan PUBLIC_BASE_URL dari environment (untuk tunnel/cloudflared).
+// Jika tidak ada, gunakan IP LAN.
 function galleryBaseUrl(eventId) {
-  return `http://${getLanIp()}:${process.env.PORT || 4000}/gallery/${eventId}`;
+  const base = process.env.PUBLIC_BASE_URL
+    ? process.env.PUBLIC_BASE_URL.replace(/\/$/, '')
+    : `http://${getLanIp()}:${process.env.PORT || 4000}`;
+  // Saat sinkronisasi VPS aktif, pakai id event di VPS supaya link valid di sana.
+  return base + `/gallery/${publicEventId(eventId)}`;
 }
 
 // Ambil IPv4 LAN utama (untuk QR yang harus bisa dibuka HP di jaringan yang sama).
@@ -90,7 +100,7 @@ function lanBaseUrl() {
 app.get('/api/booth/gallery-url', (req, res) => {
   const id = boothEventId();
   if (!id) return res.status(404).json({ error: 'belum ada foto booth yang diimpor' });
-  const base = `http://${getLanIp()}:${process.env.PORT || 4000}/gallery/${id}`;
+  const base = `${lanBaseUrl()}/gallery/${publicEventId(id)}`;
   // sesi terakhir (foto terbaru yang punya session_id)
   const last = db
     .prepare('SELECT session_id FROM photos WHERE event_id = ? AND session_id IS NOT NULL ORDER BY created_at DESC, id DESC LIMIT 1')
@@ -112,7 +122,7 @@ app.get('/qr/:eventId', async (req, res) => {
   if (!ev) return res.status(404).type('html').send('<h1>Event tidak ditemukan</h1>');
 
   const base = lanBaseUrl();
-  const galleryUrl = `${base}/gallery/${ev.id}`;
+  const galleryUrl = `${base}/gallery/${publicEventId(ev.id)}`;
   let svg = '';
   try {
     svg = await QRCode.toString(galleryUrl, {
@@ -234,6 +244,8 @@ const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`✅ API berjalan di http://localhost:${PORT}`);
   startBoothWatcher();
+  // Dorong foto hasil impor ke backend VPS (shares.kira2memories.web.id).
+  startVpsSync();
   // QR self-host ditampilkan di layar dslrBooth (menggantikan QR cloud).
   startScreenWatcher(async () => {
     const id = boothEventId();

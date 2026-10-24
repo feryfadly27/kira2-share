@@ -67,3 +67,13 @@ try {
 try {
   db.exec('ALTER TABLE photos ADD COLUMN session_id TEXT');
 } catch { /* kolom sudah ada */ }
+
+// Tambah kolom untuk sinkronisasi ke VPS:
+//  - events.vps_event_id : id event di backend VPS (dibuat/dicari berdasarkan nama)
+//  - photos.vps_synced   : 1 = foto ini sudah terkirim ke VPS
+try {
+  db.exec('ALTER TABLE events ADD COLUMN vps_event_id INTEGER');
+} catch { /* kolom sudah ada */ }
+try {
+  db.exec('ALTER TABLE photos ADD COLUMN vps_synced INTEGER DEFAULT 0');
+} catch { /* kolom sudah ada */ }
